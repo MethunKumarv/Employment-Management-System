@@ -114,24 +114,18 @@ function App() {
     Get dashboard data
   */
   const fetchDashboard = async () => {
-    try {
-      const response = await axios.get(
-        `${API_URL}/dashboard`
-      );
+  try {
+    const response = await axios.get(`${API_URL}/dashboard`);
+    setDashboard(response.data);
+  } catch (error) {
+    console.error("Error fetching dashboard:", error);
 
-      setDashboard(response.data);
-    } catch (error) {
-      console.error(
-        "Error fetching dashboard:",
-        error
-      );
-
-      showToast(
-        "Unable to load dashboard data.",
-        "error"
-      );
-    }
-  };
+    setDashboard({
+      total_employees: 0,
+      total_departments: 0,
+    });
+  }
+};
 
   /*
     Initial data loading
