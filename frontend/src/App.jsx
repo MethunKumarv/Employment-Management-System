@@ -89,26 +89,17 @@ function App() {
     Get employees
   */
   const fetchEmployees = async () => {
-    try {
-      const response = await axios.get(
-        `${API_URL}/employees`
-      );
+  try {
+    const response = await axios.get(`${API_URL}/employees`);
+    setEmployees(response.data);
+  } catch (error) {
+    console.error("Error fetching employees:", error);
 
-      setEmployees(response.data);
-    } catch (error) {
-      console.error(
-        "Error fetching employees:",
-        error
-      );
-
-      showToast(
-        "Unable to load employees.",
-        "error"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    setEmployees([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   /*
     Get dashboard data
