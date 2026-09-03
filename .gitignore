@@ -16,3 +16,7 @@ frontend/dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# Environment variables
+backend/.env
+frontend/.env
