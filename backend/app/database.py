@@ -12,6 +12,7 @@ client = MongoClient(MONGODB_URL)
 db = client["employee_management"]
 
 employees_collection = db["employees"]
+counters_collection = db["counters"]
 
 try:
     client.admin.command("ping")

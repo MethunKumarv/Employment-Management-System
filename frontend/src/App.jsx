@@ -248,18 +248,16 @@ if (isEditing) {
   });
 }
     } catch (error) {
-      console.error(
-        "Error saving employee:",
-        error
-      );
+  console.error("Error saving employee:", error);
 
-      showToast(
-        isEditing
-          ? "Failed to update employee."
-          : "Failed to add employee.",
-        "error"
-      );
-    }
+  const message =
+    error.response?.data?.detail ||
+    (isEditing
+      ? "Failed to update employee."
+      : "Failed to add employee.");
+
+  showToast(message, "error");
+}
   };
 
   /*
@@ -833,6 +831,7 @@ if (isEditing) {
                 <thead>
 
                   <tr>
+                    <th>ID</th>
                     <th>EMPLOYEE</th>
                     <th>EMAIL</th>
                     <th>DEPARTMENT</th>
@@ -850,6 +849,11 @@ if (isEditing) {
                       <tr
                         key={employee._id}
                       >
+                      <td>
+                        <span className="employee-id">
+                          {employee.employee_id}
+                        </span>
+                      </td>
 
                         <td>
 

@@ -2,8 +2,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from bson import ObjectId
-
-from app.database import employees_collection
+from pymongo.errors import DuplicateKeyError
+from pymongo import ReturnDocument
+from app.database import employees_collection, counters_collection
 from app.schemas import EmployeeCreate, EmployeeUpdate
 
 app = FastAPI()
@@ -15,6 +16,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def generate_employee_id():
+    counter = counters_collection.find_one_and_update(
+        {"_id": "employee_id"},
+        {"$inc": {"last_number": 1}},
+        upsert=True,
+        return_document=True,
+    )
+
+    return f"EMP-{counter['last_number']:04d}"
+
 @app.get("/")
 def root():
     return {"message": "Employee Management System API"}
@@ -24,11 +35,32 @@ def root():
 def create_employee(employee: EmployeeCreate):
     employee_data = employee.model_dump()
 
-    result = employees_collection.insert_one(employee_data)
+    employee_data["email"] = employee_data["email"].lower()
+
+    existing_employee = employees_collection.find_one(
+        {"email": employee_data["email"]}
+    )
+
+    if existing_employee:
+        raise HTTPException(
+            status_code=409,
+            detail="An employee with this email already exists.",
+        )
+
+    employee_data["employee_id"] = generate_employee_id()
+
+    try:
+        result = employees_collection.insert_one(employee_data)
+    except DuplicateKeyError:
+        raise HTTPException(
+            status_code=409,
+            detail="An employee with this email already exists.",
+        )
 
     return {
         "message": "Employee created successfully",
-        "employee_id": str(result.inserted_id)
+        "employee_id": employee_data["employee_id"],
+        "mongo_id": str(result.inserted_id),
     }
 
 

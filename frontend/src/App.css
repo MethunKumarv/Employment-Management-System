@@ -846,6 +846,18 @@ button {
   background: #fafbff;
 }
 
+.employee-id {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #f1f4f9;
+  border: 1px solid #dce2eb;
+  border-radius: 5px;
+  color: #526075;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* =========================
    EMPLOYEE NAME
    ========================= */
