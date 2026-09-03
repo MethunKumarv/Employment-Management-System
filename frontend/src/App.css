@@ -1337,7 +1337,7 @@ button {
   .search-box {
   width: 100%;
   min-width: 0;
-  height: 2.625rem;
+  height: 50px;
 }
 
   .search-controls select {
