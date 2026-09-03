@@ -8,11 +8,30 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+const SortArrow = ({ column, sortConfig }) => {
+  if (sortConfig.key !== column) {
+    return (
+      <span className="sort-arrow sort-arrow-neutral">
+        ↕
+      </span>
+    );
+  }
+
+  return (
+    <span className="sort-arrow">
+      {sortConfig.direction === "asc" ? "↑" : "↓"}
+    </span>
+  );
+};
+
 function App() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortConfig, setSortConfig] = useState({
+  key: "name",
+  direction: "asc",
+});
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] =
     useState("");
@@ -23,11 +42,12 @@ function App() {
   });
 
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    department: "",
-    designation: "",
-  });
+  name: "",
+  email: "",
+  department: "",
+  designation: "",
+  status: "Active",
+});
 
   const [editingId, setEditingId] = useState(null);
 
@@ -171,16 +191,17 @@ function App() {
     Reset the employee form
   */
   const resetForm = () => {
-    setFormData({
-      name: "",
-      email: "",
-      department: "",
-      designation: "",
-    });
+  setFormData({
+    name: "",
+    email: "",
+    department: "",
+    designation: "",
+    status: "Active",
+  });
 
-    setEditingId(null);
-    setEditingEmployeeName("");
-  };
+  setEditingId(null);
+  setEditingEmployeeName("");
+};
 
   /*
     Add OR update employee
@@ -264,36 +285,17 @@ if (isEditing) {
     Enter edit mode
   */
   const handleEdit = (employee) => {
-    /*
-      Store which employee we are editing.
-    */
-    setEditingId(employee._id);
+  setEditingId(employee._id);
+  setEditingEmployeeName(employee.name);
 
-    /*
-      Store the employee name for the
-      edit-mode message.
-    */
-    setEditingEmployeeName(employee.name);
-
-    /*
-      Load existing employee information
-      into the SAME form.
-    */
-    setFormData({
-      name: employee.name,
-      email: employee.email,
-      department: employee.department,
-      designation: employee.designation,
-    });
-
-    /*
-      We intentionally DO NOT scroll here.
-
-      The useEffect above watches editingId.
-      After React renders the edit form,
-      it will scroll to the correct section.
-    */
-  };
+  setFormData({
+    name: employee.name,
+    email: employee.email,
+    department: employee.department,
+    designation: employee.designation,
+    status: employee.status || "Active",
+  });
+};
 
   /*
     Delete employee
@@ -335,6 +337,26 @@ if (isEditing) {
   /*
     Search + department filter
   */
+
+const handleSort = (key) => {
+  setSortConfig((current) => {
+    if (current.key === key) {
+      return {
+        key,
+        direction:
+          current.direction === "asc"
+            ? "desc"
+            : "asc",
+      };
+    }
+
+    return {
+      key,
+      direction: "asc",
+    };
+  });
+};
+
   const filteredEmployees =
     employees.filter((employee) => {
       const search =
@@ -362,27 +384,38 @@ if (isEditing) {
   /*
     Sort employees
   */
-  const sortedEmployees = [
-    ...filteredEmployees,
-  ].sort((a, b) => {
-    const comparison =
-      a.name.localeCompare(b.name);
+  const sortedEmployees = [...filteredEmployees].sort((a, b) => {
+  const { key, direction } = sortConfig;
 
-    return sortOrder === "asc"
-      ? comparison
-      : -comparison;
-  });
+  const valueA = a[key] || "";
+  const valueB = b[key] || "";
+
+  const comparison = String(valueA).localeCompare(
+    String(valueB),
+    undefined,
+    {
+      numeric: key === "employee_id",
+      sensitivity: "base",
+    }
+  );
+
+  return direction === "asc"
+    ? comparison
+    : -comparison;
+});
 
   /*
     Get unique departments
   */
   const departments = [
-    ...new Set(
-      employees.map(
-        (employee) => employee.department
-      )
-    ),
-  ];
+  ...new Map(
+    employees.map((employee) => {
+      const department = employee.department.trim();
+
+      return [department.toLowerCase(), department];
+    })
+  ).values(),
+].sort((a, b) => a.localeCompare(b));
 
   return (
     <div className="app">
@@ -667,6 +700,27 @@ if (isEditing) {
 
             </div>
 
+            <div className="form-field">
+              <label htmlFor="status">
+                Employment Status
+              </label>
+
+              <select
+                id="status"
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                required
+              >
+                <option value="Active">Active</option>
+                <option value="On Leave">On Leave</option>
+                <option value="Medical Leave">Medical Leave</option>
+                <option value="Resigned">Resigned</option>
+                <option value="Terminated">Terminated</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
             <div className="form-actions">
 
               <button
@@ -764,25 +818,6 @@ if (isEditing) {
 
             </select>
 
-            <select
-              value={sortOrder}
-              onChange={(event) =>
-                setSortOrder(
-                  event.target.value
-                )
-              }
-            >
-
-              <option value="asc">
-                Name: A → Z
-              </option>
-
-              <option value="desc">
-                Name: Z → A
-              </option>
-
-            </select>
-
           </div>
 
           {/* LOADING */}
@@ -829,16 +864,147 @@ if (isEditing) {
               <table className="employee-table">
 
                 <thead>
-
                   <tr>
-                    <th>ID</th>
-                    <th>EMPLOYEE</th>
-                    <th>EMAIL</th>
-                    <th>DEPARTMENT</th>
-                    <th>DESIGNATION</th>
+                    <th
+                      aria-sort={
+                        sortConfig.key === "employee_id"
+                          ? sortConfig.direction === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : "none"
+                      }
+                    >
+                      <button
+                        type="button"
+                        className="table-sort-button"
+                        onClick={() => handleSort("employee_id")}
+                        aria-label="Sort by employee ID"
+                      >
+                        ID
+                        <SortArrow
+                          column="employee_id"
+                          sortConfig={sortConfig}
+                        />
+                      </button>
+                    </th>
+
+                    <th
+                      aria-sort={
+                        sortConfig.key === "name"
+                          ? sortConfig.direction === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : "none"
+                      }
+                    >
+                      <button
+                        type="button"
+                        className="table-sort-button"
+                        onClick={() => handleSort("name")}
+                        aria-label="Sort by employee name"
+                      >
+                        EMPLOYEE
+                        <SortArrow
+                          column="name"
+                          sortConfig={sortConfig}
+                        />
+                      </button>
+                    </th>
+
+                    <th
+                      aria-sort={
+                        sortConfig.key === "email"
+                          ? sortConfig.direction === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : "none"
+                      }
+                    >
+                      <button
+                        type="button"
+                        className="table-sort-button"
+                        onClick={() => handleSort("email")}
+                        aria-label="Sort by email"
+                      >
+                        EMAIL
+                        <SortArrow
+                          column="email"
+                          sortConfig={sortConfig}
+                        />
+                      </button>
+                    </th>
+
+                    <th
+                      aria-sort={
+                        sortConfig.key === "department"
+                          ? sortConfig.direction === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : "none"
+                      }
+                    >
+                      <button
+                        type="button"
+                        className="table-sort-button"
+                        onClick={() => handleSort("department")}
+                        aria-label="Sort by department"
+                      >
+                        DEPARTMENT
+                        <SortArrow
+                          column="department"
+                          sortConfig={sortConfig}
+                        />
+                      </button>
+                    </th>
+
+                    <th
+                      aria-sort={
+                        sortConfig.key === "designation"
+                          ? sortConfig.direction === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : "none"
+                      }
+                    >
+                      <button
+                        type="button"
+                        className="table-sort-button"
+                        onClick={() => handleSort("designation")}
+                        aria-label="Sort by designation"
+                      >
+                        DESIGNATION
+                        <SortArrow
+                          column="designation"
+                          sortConfig={sortConfig}
+                        />
+                      </button>
+                    </th>
+
+                    <th
+                      aria-sort={
+                        sortConfig.key === "status"
+                          ? sortConfig.direction === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : "none"
+                      }
+                    >
+                      <button
+                        type="button"
+                        className="table-sort-button"
+                        onClick={() => handleSort("status")}
+                        aria-label="Sort by employment status"
+                      >
+                        STATUS
+                        <SortArrow
+                          column="status"
+                          sortConfig={sortConfig}
+                        />
+                      </button>
+                    </th>
+
                     <th>ACTIONS</th>
                   </tr>
-
                 </thead>
 
                 <tbody>
@@ -887,12 +1053,19 @@ if (isEditing) {
 
                         </td>
 
+                        <td>{employee.designation}</td>
+
                         <td>
-                          {employee.designation}
+                          <span
+                            className={`status-badge status-${employee.status
+                              ?.toLowerCase()
+                              .replace(/\s+/g, "-")}`}
+                          >
+                            {employee.status || "Active"}
+                          </span>
                         </td>
 
                         <td>
-
                           <div className="action-buttons">
 
                             <button

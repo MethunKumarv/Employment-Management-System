@@ -65,6 +65,7 @@ def create_employee(employee: EmployeeCreate):
         "message": "Employee created successfully",
         "employee_id": employee_data["employee_id"],
         "mongo_id": str(result.inserted_id),
+        "status": employee_data["status"],
     }
 
 
@@ -103,15 +104,36 @@ def update_employee(employee_id: str, employee: EmployeeUpdate):
     if existing_employee is None:
         raise HTTPException(
             status_code=404,
-            detail="Employee not found"
+            detail="Employee not found",
         )
 
     employee_data = employee.model_dump()
 
-    employees_collection.update_one(
-        {"_id": ObjectId(employee_id)},
-        {"$set": employee_data}
+    employee_data["email"] = employee_data["email"].lower()
+
+    duplicate_email = employees_collection.find_one(
+        {
+            "email": employee_data["email"],
+            "_id": {"$ne": ObjectId(employee_id)},
+        }
     )
+
+    if duplicate_email:
+        raise HTTPException(
+            status_code=409,
+            detail="An employee with this email already exists.",
+        )
+
+    try:
+        employees_collection.update_one(
+            {"_id": ObjectId(employee_id)},
+            {"$set": employee_data},
+        )
+    except DuplicateKeyError:
+        raise HTTPException(
+            status_code=409,
+            detail="An employee with this email already exists.",
+        )
 
     updated_employee = employees_collection.find_one(
         {"_id": ObjectId(employee_id)}
