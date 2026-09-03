@@ -155,12 +155,24 @@ def delete_employee(employee_id: str):
             detail="Employee not found"
         )
 
-    employees_collection.delete_one(
-        {"_id": ObjectId(employee_id)}
+    new_status = (
+        "Active"
+        if existing_employee.get("status") == "Inactive"
+        else "Inactive"
+    )
+
+    employees_collection.update_one(
+        {"_id": ObjectId(employee_id)},
+        {"$set": {"status": new_status}}
     )
 
     return {
-        "message": "Employee deleted successfully"
+        "message": (
+            "Employee activated successfully"
+            if new_status == "Active"
+            else "Employee deactivated successfully"
+        ),
+        "status": new_status,
     }
 
 @app.get("/dashboard")

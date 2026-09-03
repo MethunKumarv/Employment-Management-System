@@ -35,6 +35,8 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] =
     useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const [dashboard, setDashboard] = useState({
     total_employees: 0,
@@ -53,6 +55,9 @@ function App() {
 
   const [editingEmployeeName, setEditingEmployeeName] =
     useState("");
+
+  const [createdEmployeeId, setCreatedEmployeeId] = useState(null);
+  const [createdEmployee, setCreatedEmployee] = useState(null);
 
   /*
     Reference to the Employee Details section.
@@ -217,74 +222,105 @@ function App() {
 };
 
   const handleSubmit = async (event) => {
-    event.preventDefault();
+  event.preventDefault();
+
+  const emailPattern =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailPattern.test(formData.email.trim())) {
+    showToast(
+      "Please enter a valid email address, such as name@example.com.",
+      "error"
+    );
+    return;
+  }
+
+  const isEditing = Boolean(editingId);
+
+  try {
+    /*
+      UPDATE
+    */
+    if (isEditing) {
+      await axios.put(
+        `${API_URL}/employees/${editingId}`,
+        formData
+      );
+
+      showToast(
+        "Employee updated successfully!",
+        "success"
+      );
+    }
 
     /*
-      Save whether this is edit mode before
-      making the request.
-
-      This makes the success message reliable.
+      CREATE
     */
-    const isEditing = Boolean(editingId);
+    else {
+      const response = await axios.post(
+        `${API_URL}/employees`,
+        formData
+      );
 
-    try {
-      /*
-        UPDATE
-      */
-      if (isEditing) {
-  await axios.put(
-    `${API_URL}/employees/${editingId}`,
-    formData
-  );
+      setCreatedEmployeeId(
+        response.data.employee_id
+      );
 
-  showToast(
-    "Employee updated successfully!",
-    "success"
-  );
-}
+      setCreatedEmployee({
+        ...formData,
+        employee_id: response.data.employee_id,
+      });
 
-      /*
-        CREATE
-      */
-      else {
-        await axios.post(
-          `${API_URL}/employees`,
-          formData
-        );
+      showToast(
+        "Employee added successfully!",
+        "success"
+      );
+    }
 
-        showToast(
-          "Employee added successfully!",
-          "success"
-        );
-      }
+    resetForm();
 
-      resetForm();
+    await fetchEmployees();
+    await fetchDashboard();
 
-await fetchEmployees();
-await fetchDashboard();
+    if (isEditing) {
+      requestAnimationFrame(() => {
+        scrollToEmployeeDirectory();
+      });
+    }
+  } catch (error) {
+    console.error(
+      "Error saving employee:",
+      error
+    );
 
-if (isEditing) {
-  requestAnimationFrame(() => {
-    scrollToEmployeeDirectory();
-  });
-}
-    } catch (error) {
-  console.error("Error saving employee:", error);
+    let message;
 
-  const message =
-    error.response?.data?.detail ||
-    (isEditing
-      ? "Failed to update employee."
-      : "Failed to add employee.");
+    const detail = error.response?.data?.detail;
 
-  showToast(message, "error");
-}
-  };
+    if (typeof detail === "string") {
+      message = detail;
+    } else if (Array.isArray(detail)) {
+      message =
+        detail[0]?.msg ||
+        (isEditing
+          ? "Failed to update employee."
+          : "Failed to add employee.");
+    } else {
+      message = isEditing
+        ? "Failed to update employee."
+        : "Failed to add employee.";
+    }
+
+    showToast(message, "error");
+  }
+};
 
   /*
     Enter edit mode
   */
   const handleEdit = (employee) => {
+  setCreatedEmployeeId(null);
+
   setEditingId(employee._id);
   setEditingEmployeeName(employee.name);
 
@@ -310,12 +346,12 @@ if (isEditing) {
     }
 
     try {
-      await axios.delete(
+      const response = await axios.delete(
         `${API_URL}/employees/${employeeId}`
       );
 
       showToast(
-        "Employee deleted successfully!",
+        response.data.message,
         "success"
       );
 
@@ -403,6 +439,27 @@ const handleSort = (key) => {
     ? comparison
     : -comparison;
 });
+
+const totalPages = Math.ceil(
+  sortedEmployees.length / pageSize
+);
+useEffect(() => {
+  if (
+    totalPages > 0 &&
+    currentPage > totalPages
+  ) {
+    setCurrentPage(totalPages);
+  }
+}, [currentPage, totalPages]);
+
+const startIndex =
+  (currentPage - 1) * pageSize;
+
+const endIndex =
+  startIndex + pageSize;
+
+const paginatedEmployees =
+  sortedEmployees.slice(startIndex, endIndex);
 
   /*
     Get unique departments
@@ -622,7 +679,65 @@ const handleSort = (key) => {
             )}
 
           </div>
+          {createdEmployee && !editingId && (
+  <div className="employee-id-confirmation">
+    <div className="employee-id-confirmation-icon">
+      ✓
+    </div>
 
+    <div className="employee-id-confirmation-content">
+      <button
+        type="button"
+        className="employee-id-confirmation-close"
+        onClick={() => {
+          setCreatedEmployee(null);
+          setCreatedEmployeeId(null);
+        }}
+        aria-label="Close confirmation"
+      >
+        ×
+      </button>
+
+      <strong>Employee added successfully!</strong>
+
+      <p>
+        This is the employee's permanent ID. Please provide it to the employee.
+      </p>
+
+      <div className="employee-id-display">
+        <span>Employee ID</span>
+        <strong>{createdEmployee.employee_id}</strong>
+      </div>
+
+      <div className="employee-id-details">
+        <div className="employee-id-detail">
+          <span>Name</span>
+          <strong>{createdEmployee.name}</strong>
+        </div>
+
+        <div className="employee-id-detail">
+          <span>Email</span>
+          <strong>{createdEmployee.email}</strong>
+        </div>
+
+        <div className="employee-id-detail">
+          <span>Department</span>
+          <strong>{createdEmployee.department}</strong>
+        </div>
+
+        <div className="employee-id-detail">
+          <span>Designation</span>
+          <strong>{createdEmployee.designation}</strong>
+        </div>
+
+        <div className="employee-id-detail">
+          <span>Status</span>
+          <strong>{createdEmployee.status}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
           <form
             className="employee-form"
             onSubmit={handleSubmit}
@@ -711,6 +826,7 @@ const handleSort = (key) => {
                 value={formData.status}
                 onChange={handleChange}
                 required
+                disabled={!editingId}
               >
                 <option value="Active">Active</option>
                 <option value="On Leave">On Leave</option>
@@ -783,22 +899,20 @@ const handleSort = (key) => {
                 type="text"
                 placeholder="Search by name or email..."
                 value={searchTerm}
-                onChange={(event) =>
-                  setSearchTerm(
-                    event.target.value
-                  )
-                }
+                onChange={(event) => {
+                  setSearchTerm(event.target.value);
+                  setCurrentPage(1);
+                }}
               />
 
             </div>
 
             <select
               value={departmentFilter}
-              onChange={(event) =>
-                setDepartmentFilter(
-                  event.target.value
-                )
-              }
+              onChange={(event) => {
+              setDepartmentFilter(event.target.value);
+              setCurrentPage(1);
+            }}
             >
 
               <option value="">
@@ -818,6 +932,29 @@ const handleSort = (key) => {
 
             </select>
 
+          </div>
+
+          <div className="pagination-top">
+            <div className="page-size-control">
+              <span>Show</span>
+
+              <select
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setCurrentPage(1);
+                }}
+                aria-label="Employees per page"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+
+              <span>entries</span>
+            </div>
           </div>
 
           {/* LOADING */}
@@ -857,9 +994,10 @@ const handleSort = (key) => {
 
           ) : (
 
-            /* TABLE */
+  <>
+    {/* TABLE */}
 
-            <div className="table-container">
+    <div className="table-container">
 
               <table className="employee-table">
 
@@ -1009,7 +1147,7 @@ const handleSort = (key) => {
 
                 <tbody>
 
-                  {sortedEmployees.map(
+                  {paginatedEmployees.map(
                     (employee) => (
 
                       <tr
@@ -1081,15 +1219,17 @@ const handleSort = (key) => {
                             </button>
 
                             <button
-                              className="delete-button"
                               type="button"
-                              onClick={() =>
-                                handleDelete(
-                                  employee._id
-                                )
+                              className={
+                                employee.status === "Inactive"
+                                  ? "activate-button"
+                                  : "delete-button"
                               }
+                              onClick={() => handleDelete(employee._id)}
                             >
-                              Delete
+                              {employee.status === "Inactive"
+                                ? "Activate"
+                                : "Deactivate"}
                             </button>
 
                           </div>
@@ -1106,8 +1246,56 @@ const handleSort = (key) => {
               </table>
 
             </div>
+            <div className="pagination">
+              <button
+                type="button"
+                className="pagination-button"
+                disabled={currentPage === 1}
+                onClick={() =>
+                  setCurrentPage((page) => page - 1)
+                }
+              >
+                Previous
+              </button>
 
-          )}
+              <div className="pagination-pages">
+                {Array.from(
+                  { length: totalPages },
+                  (_, index) => index + 1
+                ).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`pagination-page ${
+                      currentPage === page
+                        ? "pagination-page-active"
+                        : ""
+                    }`}
+                    onClick={() => setCurrentPage(page)}
+                    aria-current={
+                      currentPage === page
+                        ? "page"
+                        : undefined
+                    }
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+  <button
+    type="button"
+    className="pagination-button"
+    disabled={currentPage === totalPages}
+    onClick={() =>
+      setCurrentPage((page) => page + 1)
+    }
+  >
+    Next
+  </button>
+    </div>
+  </>
+)}
 
         </section>
 
