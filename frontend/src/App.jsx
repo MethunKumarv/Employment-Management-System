@@ -820,21 +820,29 @@ const paginatedEmployees =
                 Employment Status
               </label>
 
-              <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                required
-                disabled={!editingId}
-              >
-                <option value="Active">Active</option>
-                <option value="On Leave">On Leave</option>
-                <option value="Medical Leave">Medical Leave</option>
-                <option value="Resigned">Resigned</option>
-                <option value="Terminated">Terminated</option>
-                <option value="Inactive">Inactive</option>
-              </select>
+              <div className="status-control-row">
+                <select
+                  id="status"
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  required
+                  disabled={!editingId}
+                >
+                  <option value="Active">Active</option>
+                  <option value="On Leave">On Leave</option>
+                  <option value="Medical Leave">Medical Leave</option>
+                  <option value="Resigned">Resigned</option>
+                  <option value="Terminated">Terminated</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+
+                {!editingId && (
+                  <small className="status-helper">
+                    Employment status can only be changed when editing an employee.
+                  </small>
+                )}
+              </div>
             </div>
 
             <div className="form-actions">

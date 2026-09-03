@@ -1088,6 +1088,35 @@ button {
   white-space: nowrap;
 }
 
+.status-label-row {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.status-label-row label {
+  margin: 0;
+}
+
+.status-control-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.status-control-row select {
+  width: 55%;
+}
+
+.status-helper {
+  flex: 1;
+  color: #687386;
+  font-size: var(--font-xs);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
 .status-active {
   background: #e8f7ef;
   color: #168653;
