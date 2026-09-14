@@ -25,8 +25,13 @@ from app.schemas import (
     EmployeeUpdate,
     UserCreate,
 )
+from fastapi.responses import Response
 
 app = FastAPI()
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    return Response(status_code=204)
 
 app.add_middleware(
     CORSMiddleware,
