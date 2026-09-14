@@ -5,6 +5,7 @@ import {
   useState,
 } from "react";
 import axios from "axios";
+import Login from "./Login";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -27,6 +28,16 @@ const SortArrow = ({ column, sortConfig }) => {
 function App() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [myTeam, setMyTeam] = useState([]);
+  const [myProfile, setMyProfile] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newUserRole, setNewUserRole] = useState("Employee");
+  const [newUserEmployeeId, setNewUserEmployeeId] = useState("");
+
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   const [sortConfig, setSortConfig] = useState({
   key: "name",
@@ -114,15 +125,191 @@ function App() {
     Get employees
   */
   const fetchEmployees = async () => {
+  const token = localStorage.getItem(
+    "hexaems_access_token"
+  );
+
+  if (!token) {
+    return;
+  }
+
   try {
-    const response = await axios.get(`${API_URL}/employees`);
+    const response = await axios.get(
+      `${API_URL}/employees`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
     setEmployees(response.data);
   } catch (error) {
-    console.error("Error fetching employees:", error);
+    console.error(
+      "Error fetching employees:",
+      error
+    );
 
     setEmployees([]);
   } finally {
     setLoading(false);
+  }
+};
+
+const fetchMyTeam = async () => {
+  const token = localStorage.getItem(
+    "hexaems_access_token"
+  );
+
+  if (!token) {
+    return;
+  }
+
+  try {
+    const response = await axios.get(
+      `${API_URL}/employees/my-team`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setMyTeam(response.data);
+  } catch (error) {
+    console.error(
+      "Error fetching my team:",
+      error
+    );
+  }
+};
+
+const fetchMyProfile = async () => {
+  const token = localStorage.getItem(
+    "hexaems_access_token"
+  );
+
+  if (!token) {
+    return;
+  }
+
+  try {
+    const response = await axios.get(
+      `${API_URL}/employees/me`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setMyProfile(response.data);
+  } catch (error) {
+    console.error(
+      "Error fetching my profile:",
+      error
+    );
+  }
+};
+
+const fetchUsers = async () => {
+  const token = localStorage.getItem(
+    "hexaems_access_token"
+  );
+
+  if (!token) {
+    return;
+  }
+
+  try {
+    const response = await axios.get(
+      `${API_URL}/users`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setUsers(response.data);
+  } catch (error) {
+    console.error(
+      "Error fetching users:",
+      error
+    );
+  }
+};
+
+const toggleUserStatus = async (userId) => {
+  const token = localStorage.getItem(
+    "hexaems_access_token"
+  );
+
+  if (!token) {
+    return;
+  }
+
+  try {
+    await axios.delete(
+      `${API_URL}/users/${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    await fetchUsers();
+  } catch (error) {
+    console.error(
+      "Error updating user status:",
+      error
+    );
+  }
+};
+
+const createUser = async (event) => {
+  event.preventDefault();
+
+  const token = localStorage.getItem(
+    "hexaems_access_token"
+  );
+
+  if (!token) {
+    return;
+  }
+
+  try {
+    await axios.post(
+      `${API_URL}/users`,
+      {
+        username: newUsername,
+        password: newPassword,
+        role: newUserRole,
+        employee_id:
+          newUserRole === "Manager" ||
+          newUserRole === "Employee"
+            ? newUserEmployeeId
+            : null,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setNewUsername("");
+    setNewPassword("");
+    setNewUserRole("Employee");
+    setNewUserEmployeeId("");
+
+    await fetchUsers();
+  } catch (error) {
+    console.error(
+      "Error creating user:",
+      error
+    );
   }
 };
 
@@ -131,7 +318,22 @@ function App() {
   */
   const fetchDashboard = async () => {
   try {
-    const response = await axios.get(`${API_URL}/dashboard`);
+    const token = localStorage.getItem(
+  "hexaems_access_token"
+);
+
+if (!token) {
+  return;
+}
+
+const response = await axios.get(
+  `${API_URL}/dashboard`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
     setDashboard(response.data);
   } catch (error) {
     console.error("Error fetching dashboard:", error);
@@ -143,13 +345,96 @@ function App() {
   }
 };
 
+useEffect(() => {
+  const token = localStorage.getItem(
+    "hexaems_access_token"
+  );
+
+  if (!token) {
+    setAuthLoading(false);
+    return;
+  }
+
+  axios
+    .get(`${API_URL}/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    .then((response) => {
+      setUser(response.data);
+    })
+    .catch(() => {
+      localStorage.removeItem(
+        "hexaems_access_token"
+      );
+      setUser(null);
+    })
+    .finally(() => {
+      setAuthLoading(false);
+    });
+}, []);
+
+const handleLogin = (loginData) => {
+  localStorage.setItem(
+    "hexaems_access_token",
+    loginData.access_token
+  );
+
+  setUser({
+    username: loginData.username,
+    role: loginData.role,
+  });
+};
+
+const handleLogout = () => {
+  localStorage.removeItem(
+    "hexaems_access_token"
+  );
+
+  setUser(null);
+};
+
+const isAdmin = user?.role === "Admin";
+const isHRManager = user?.role === "HR Manager";
+const isManager = user?.role === "Manager";
+const isEmployee = user?.role === "Employee";
+
   /*
     Initial data loading
   */
   useEffect(() => {
+  if (!user) {
+    return;
+  }
+
+  fetchDashboard();
+
+  if (
+    isAdmin ||
+    isHRManager
+  ) {
     fetchEmployees();
-    fetchDashboard();
-  }, []);
+  }
+
+  if (isManager) {
+    fetchMyTeam();
+  }
+
+  if (isEmployee) {
+    fetchMyProfile();
+  }
+
+  if (isAdmin) {
+    fetchUsers();
+  }
+}, [
+  user,
+  isAdmin,
+  isHRManager,
+  isManager,
+  isEmployee,
+]);
 
   /*
     IMPORTANT:
@@ -242,9 +527,22 @@ function App() {
       UPDATE
     */
     if (isEditing) {
+      const token = localStorage.getItem(
+        "hexaems_access_token"
+      );
+
+      if (!token) {
+        return;
+      }
+
       await axios.put(
         `${API_URL}/employees/${editingId}`,
-        formData
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       showToast(
@@ -257,9 +555,22 @@ function App() {
       CREATE
     */
     else {
+      const token = localStorage.getItem(
+        "hexaems_access_token"
+      );
+
+      if (!token) {
+        return;
+      }
+
       const response = await axios.post(
         `${API_URL}/employees`,
-        formData
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       setCreatedEmployeeId(
@@ -279,7 +590,12 @@ function App() {
 
     resetForm();
 
-    await fetchEmployees();
+    if (isManager) {
+      await fetchMyTeam();
+    } else {
+      await fetchEmployees();
+    }
+
     await fetchDashboard();
 
     if (isEditing) {
@@ -346,8 +662,21 @@ function App() {
     }
 
     try {
+      const token = localStorage.getItem(
+        "hexaems_access_token"
+      );
+
+      if (!token) {
+        return;
+      }
+
       const response = await axios.delete(
-        `${API_URL}/employees/${employeeId}`
+        `${API_URL}/employees/${employeeId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       showToast(
@@ -474,6 +803,14 @@ const paginatedEmployees =
   ).values(),
 ].sort((a, b) => a.localeCompare(b));
 
+if (authLoading) {
+  return null;
+}
+
+if (!user) {
+  return <Login onLogin={handleLogin} />;
+}
+
   return (
     <div className="app">
 
@@ -529,6 +866,14 @@ const paginatedEmployees =
 
         </div>
       </header>
+
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="logout-button"
+      >
+        Logout
+      </button>
 
       {/* =========================
           MAIN
@@ -613,19 +958,165 @@ const paginatedEmployees =
 
         </section>
 
+          {/* =========================
+            MY TEAM
+            ========================= */}
+
+        {isManager && (
+          <section className="section">
+
+            <div className="section-heading">
+
+              <div>
+                <p className="eyebrow">
+                  MY TEAM
+                </p>
+
+                <h3>
+                  Team Members
+                </h3>
+              </div>
+
+              <span className="employee-count">
+                {myTeam.length} member
+                {myTeam.length !== 1
+                  ? "s"
+                  : ""}
+              </span>
+
+            </div>
+
+            <div className="employee-list">
+
+              {myTeam.length === 0 ? (
+                <p>
+                  No team members found.
+                </p>
+              ) : (
+                myTeam.map((employee) => (
+                  <div
+                    key={employee.employee_id}
+                    className="employee-card"
+                  >
+
+                    <div>
+                      <strong>
+                        {employee.name}
+                      </strong>
+
+                      <p>
+                        {employee.employee_id}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p>
+                        {employee.designation}
+                      </p>
+
+                      <p>
+                        {employee.department}
+                      </p>
+                    </div>
+
+                    <div>
+                      <span>{employee.status}</span>
+
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(employee)}
+                      >
+                        Edit
+                      </button>
+                    </div>
+
+                  </div>
+                ))
+              )}
+
+            </div>
+
+          </section>
+        )}
+
+          {/* =========================
+            MY PROFILE
+            ========================= */}
+
+        {isEmployee && (
+          <section className="section">
+
+            <div className="section-heading">
+
+              <div>
+                <p className="eyebrow">
+                  MY PROFILE
+                </p>
+
+                <h3>
+                  My Employee Profile
+                </h3>
+              </div>
+
+            </div>
+
+            {myProfile ? (
+              <div>
+
+                <p>
+                  <strong>Name:</strong>{" "}
+                  {myProfile.name}
+                </p>
+
+                <p>
+                  <strong>Employee ID:</strong>{" "}
+                  {myProfile.employee_id}
+                </p>
+
+                <p>
+                  <strong>Email:</strong>{" "}
+                  {myProfile.email}
+                </p>
+
+                <p>
+                  <strong>Department:</strong>{" "}
+                  {myProfile.department}
+                </p>
+
+                <p>
+                  <strong>Designation:</strong>{" "}
+                  {myProfile.designation}
+                </p>
+
+                <p>
+                  <strong>Status:</strong>{" "}
+                  {myProfile.status}
+                </p>
+
+              </div>
+            ) : (
+              <p>
+                Loading profile...
+              </p>
+            )}
+
+          </section>
+        )}
+
         {/* =========================
             EMPLOYEE FORM
             ========================= */}
 
-        <section
-          ref={employeeFormSectionRef}
-          id="employee-form-section"
-          className={`section ${
-            editingId
-              ? "editing-section"
-              : ""
-          }`}
-        >
+        {(isAdmin || isHRManager || (isManager && editingId)) && (
+          <section
+            ref={employeeFormSectionRef}
+            id="employee-form-section"
+            className={`section ${
+              editingId
+                ? "editing-section"
+                : ""
+            }`}
+          >
 
           <div className="section-heading">
 
@@ -638,7 +1129,9 @@ const paginatedEmployees =
               <h3>
                 {editingId
                   ? "Edit Employee"
-                  : "Add New Employee"}
+                  : isManager
+                    ? "Employee Details"
+                    : "Add New Employee"}
               </h3>
 
               {editingId && (
@@ -861,15 +1354,17 @@ const paginatedEmployees =
           </form>
 
         </section>
+        )}
 
         {/* =========================
             EMPLOYEE DIRECTORY
             ========================= */}
 
-        <section
-          ref={employeeDirectoryRef}
-          className="section"
-        >
+        {(isAdmin || isHRManager) && (
+          <section
+            ref={employeeDirectoryRef}
+            className="section"
+          >
           <div className="section-heading">
             <div>
               <p className="eyebrow">
@@ -1306,6 +1801,189 @@ const paginatedEmployees =
 )}
 
         </section>
+        )}
+
+        {/* =========================
+    USER MANAGEMENT
+    ========================= */}
+
+{isAdmin && (
+  <section className="section">
+
+    <div className="section-heading">
+
+      <div className="user-management-list">
+        <p className="eyebrow">
+          USER MANAGEMENT
+        </p>
+
+        <h3>
+          System Users
+        </h3>
+      </div>
+
+      <span className="employee-count">
+        {users.length} user
+        {users.length !== 1
+          ? "s"
+          : ""}
+      </span>
+
+    </div>
+
+    <form
+      onSubmit={createUser}
+      className="employee-form user-management-form"
+    >
+  <div className="form-grid">
+    <div className="form-group">
+      <label>Username</label>
+      <input
+        type="text"
+        value={newUsername}
+        onChange={(event) =>
+          setNewUsername(event.target.value)
+        }
+        required
+      />
+    </div>
+
+    <div className="form-group">
+      <label>Password</label>
+      <input
+        type="password"
+        value={newPassword}
+        onChange={(event) =>
+          setNewPassword(event.target.value)
+        }
+        required
+      />
+    </div>
+
+    <div className="form-group">
+      <label>Role</label>
+      <select
+        value={newUserRole}
+        onChange={(event) =>
+          setNewUserRole(event.target.value)
+        }
+      >
+        <option value="Employee">Employee</option>
+        <option value="Manager">Manager</option>
+        <option value="HR Manager">HR Manager</option>
+        <option value="Admin">Admin</option>
+      </select>
+    </div>
+
+    {(newUserRole === "Employee" ||
+      newUserRole === "Manager") && (
+      <div className="form-group">
+        <label>Employee ID</label>
+        <input
+          type="text"
+          value={newUserEmployeeId}
+          onChange={(event) =>
+            setNewUserEmployeeId(event.target.value)
+          }
+          placeholder="e.g. EMP-0002"
+          required
+        />
+      </div>
+    )}
+  </div>
+
+  <button type="submit">
+    Create User
+  </button>
+</form>
+
+    <div>
+
+      {users.length === 0 ? (
+        <p>
+          No users found.
+        </p>
+      ) : (
+        users.map((systemUser) => (
+          <div
+            key={systemUser._id}
+            className="user-management-card"
+          >
+
+            <div className="user-management-username">
+              <strong>{systemUser.username}</strong>
+            </div>
+
+            <div className="user-management-role">
+              Role: {systemUser.role}
+            </div>
+
+            <div
+              className={`user-management-status ${
+                systemUser.status === "Active"
+                  ? "user-management-status-active"
+                  : "user-management-status-inactive"
+              }`}
+            >
+              {systemUser.status}
+            </div>
+
+            <div className="user-management-employee-id">
+              Employee ID: {systemUser.employee_id || "—"}
+            </div>
+
+            <button
+              className="user-management-action"
+              type="button"
+              onClick={() => toggleUserStatus(systemUser._id)}
+              disabled={systemUser.username === user.username}
+            >
+              {systemUser.status === "Active"
+                ? "Deactivate"
+                : "Activate"}
+            </button>
+
+            <div>
+              <strong>
+                {systemUser.username}
+              </strong>
+            </div>
+
+            <div>
+              Role: {systemUser.role}
+            </div>
+
+            <div>
+              Status: {systemUser.status}
+            </div>
+
+            <div>
+              Employee ID:{" "}
+              {systemUser.employee_id || "—"}
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                toggleUserStatus(systemUser._id)
+              }
+              disabled={
+                systemUser.username === user.username
+              }
+            >
+              {systemUser.status === "Active"
+                ? "Deactivate"
+                : "Activate"}
+            </button>
+
+          </div>
+        ))
+      )}
+
+    </div>
+
+  </section>
+)}
 
       </main>
 

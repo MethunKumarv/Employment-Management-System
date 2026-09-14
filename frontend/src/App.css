@@ -1676,3 +1676,246 @@ button {
     height: 42px !important;
   }
 }
+
+/* Login */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 36px;
+  border-radius: 16px;
+  background: white;
+  box-sizing: border-box;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.login-brand h1 {
+  margin: 0 0 8px;
+}
+
+.login-brand p {
+  margin: 0;
+}
+
+.login-field {
+  margin-bottom: 18px;
+}
+
+.login-field label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 600;
+}
+
+.login-field input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #d8dce3;
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-size: 15px;
+}
+
+.login-field input:focus {
+  outline: none;
+  border-color: #555;
+}
+
+.login-error {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff0f0;
+  color: #b42318;
+  font-size: 14px;
+}
+
+.login-button {
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+.login-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.login-button:hover:not(:disabled) {
+  background: #D9D9D9;
+  transform: translateY(-1px);
+}
+
+.logout-button {
+  position: absolute;
+  top: 20px;
+  right: 40px;
+  left: auto;
+
+  border: 1px solid #dfe4ec;
+  background: #ffffff;
+  color: #4d5667;
+  border-radius: 9px;
+  padding: 9px 15px;
+  font-weight: 600;
+  transition: 0.2s ease;
+}
+
+.logout-button:hover {
+  background: #D9D9D9;
+}
+
+.employee-card button {
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #4e5869;
+
+  padding: 7px 13px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.employee-card button:hover {
+  background: #D9D9D9;
+  border-color: #c7ced9;
+  color: #4e5869;
+  transform: translateY(-1px);
+}
+
+.employee-card button:active {
+  transform: translateY(0);
+}
+
+/* My Team - keep existing structure, move Edit button right */
+
+.employee-card {
+  position: relative;
+  padding-bottom: 24px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid #e5e9f0;
+  box-shadow: 0 2px 8px rgba(23, 32, 51, 0.04);
+  .employee-card {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+}
+
+.employee-card > div:last-child {
+  position: relative;
+  width: 100%;
+}
+
+.employee-card > div:last-child button {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.employee-card > div:last-child button:hover {
+  transform: translateY(-50%) translateY(-1px);
+}
+
+.employee-card > div:last-child button:active {
+  transform: translateY(-50%);
+}
+
+.employee-card:hover {
+  border-color: #c7ced9;
+  box-shadow: 0 8px 20px rgba(23, 32, 51, 0.10);
+  transform: translateY(-2px);
+}
+.employee-card:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+/* =========================
+   LOGIN PASSWORD TOGGLE
+   ========================= */
+
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-wrapper input {
+  padding-right: 44px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+
+  width: 30px;
+  height: 30px;
+
+  transform: translateY(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: none;
+  border-radius: 6px;
+
+  background: transparent;
+  color: #7b8494;
+
+  font-size: 17px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.password-toggle:hover {
+  background: #f0f2f5;
+  color: #172033;
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid #7d8797;
+  outline-offset: 2px;
+}

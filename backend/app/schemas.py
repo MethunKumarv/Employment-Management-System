@@ -13,6 +13,14 @@ EmployeeStatus = Literal[
 ]
 
 
+UserRole = Literal[
+    "Admin",
+    "HR Manager",
+    "Manager",
+    "Employee",
+]
+
+
 class EmployeeCreate(BaseModel):
     name: str
     email: EmailStr
@@ -27,3 +35,16 @@ class EmployeeUpdate(BaseModel):
     department: str
     designation: str
     status: EmployeeStatus = "Active"
+
+
+class UserCreate(BaseModel):
+    username: str
+    password: str
+    role: UserRole = "Employee"
+    employee_id: str | None = None
+
+
+class UserResponse(BaseModel):
+    username: str
+    role: UserRole
+    status: str
