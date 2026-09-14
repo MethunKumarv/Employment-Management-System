@@ -3,7 +3,6 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError
-from pymongo import ReturnDocument
 from app.database import (
     employees_collection,
     counters_collection,
