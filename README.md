@@ -12,6 +12,8 @@ requests and manages employee records stored in MongoDB Atlas.
 
 ### Main features
 
+#### Employee Management
+
 -   Dashboard showing total employees and total departments
 -   Add new employees
 -   Automatically generated permanent employee IDs (`EMP-0001`,
@@ -26,8 +28,40 @@ requests and manages employee records stored in MongoDB Atlas.
 -   Department filtering
 -   Column sorting
 -   Pagination with 5, 10, 25, 50, or 100 entries per page
+
+#### Authentication and Security
+
+-   Username/password authentication
+-   JWT-based access tokens
+-   Secure password hashing using Argon2
+-   Protected API endpoints
+-   Authenticated session validation through `/auth/me`
+-   Login rejection for inactive user accounts
+-   Password visibility toggle on the login page
+
+#### Role-Based Access Control
+
+-   Four system roles: Admin, HR Manager, Manager, and Employee
+-   Backend authorization using FastAPI dependencies
+-   Role-specific application sections and permissions
+-   Admin-only user management
+-   Manager-only team management
+-   Employee-only self-service profile
+-   Managers restricted to editing members of their own team
+
+#### User Management
+
+-   Create system users
+-   Link Manager and Employee accounts to employee records
+-   Activate/deactivate user accounts
+-   Prevent administrators from deactivating their own account
+-   Store only password hashes, never plaintext passwords
+
+#### User Experience
+
 -   Toast notifications
 -   Employee ID confirmation after creation
+-   Edit-mode highlighting
 -   Responsive interface for desktop and mobile
 -   FastAPI Swagger documentation
 -   Postman API testing
@@ -118,14 +152,20 @@ EMS/
 │   │   ├── __init__.py
 │   │   ├── main.py
 │   │   ├── database.py
-│   │   └── schemas.py
+│   │   ├── schemas.py
+│   │   └── auth.py
 │   ├── .env
 │   ├── .gitignore
-│   └── requirements.txt
+│   ├── requirements.txt
+│   ├── create_admin.py
+│   ├── link_employee_user.py
+│   ├── link_manager_user.py
+│   └── link_manager_team.py
 │
 ├── frontend/
 │   ├── src/
 │   │   ├── App.jsx
+│   │   ├── Login.jsx
 │   │   ├── App.css
 │   │   ├── index.css
 │   │   └── ...
@@ -169,6 +209,7 @@ employee_management
 ``` text
 employee_management
 ├── employees
+├── users
 └── counters
 ```
 
@@ -185,6 +226,34 @@ employee_management
   "status": "Active"
 }
 ```
+
+### User document
+
+``` json
+{
+  "_id": "MongoDB ObjectId",
+  "username": "employee",
+  "hashed_password": "Argon2 hash",
+  "role": "Employee",
+  "status": "Active",
+  "employee_id": "EMP-0002"
+}
+```
+
+The original password is not stored in MongoDB. The `hashed_password`
+field contains the Argon2 hash used to verify login credentials.
+
+### User roles
+
+-   Admin
+-   HR Manager
+-   Manager
+-   Employee
+
+### User account statuses
+
+-   Active
+-   Inactive
 
 ### Supported statuses
 
@@ -208,6 +277,83 @@ EMP-0003
 The ID is permanent and is not reused when an employee becomes inactive.
 
 Unique indexes are maintained for `employee_id` and `email`.
+
+## Authentication and Authorization
+
+HexaEMS uses username/password authentication with JWT access tokens.
+
+### Authentication API
+
+  Method   Endpoint        Purpose
+  -------- --------------- ---------------------------------------------------
+  POST     `/auth/login`   Authenticate a user and issue a JWT
+  GET      `/auth/me`      Return the currently authenticated user's account
+
+After successful login, the frontend stores the access token and sends
+it with protected API requests:
+
+``` text
+Authorization: Bearer <access_token>
+```
+
+Passwords are never stored as plaintext. They are hashed with Argon2
+before being stored in MongoDB.
+
+### Role-Based Access Control
+
+HexaEMS supports four roles:
+
+  Feature                Admin   HR Manager   Manager    Employee
+  --------------------- ------- ------------ ---------- ----------
+  Overview                 ✓         ✓           ✓          ✓
+  Add Employee             ✓         ✓           ✗          ✗
+  Employee Directory       ✓         ✓           ✗          ✗
+  Edit Employees           ✓         ✓        Own Team      ✗
+  Deactivate Employee      ✓         ✗           ✗          ✗
+  My Team                  ✗         ✗           ✓          ✗
+  My Profile               ✗         ✗           ✗          ✓
+  User Management          ✓         ✗           ✗          ✗
+
+Authorization is enforced by the FastAPI backend. Frontend role checks
+control the visible interface, while backend authorization is the actual
+security boundary.
+
+### User Management API
+
+  Method   Endpoint        Purpose
+  -------- --------------- -----------------------------------
+  POST     `/users`        Create a system user
+  GET      `/users`        List system users
+  DELETE   `/users/{id}`   Activate/deactivate a system user
+
+User-management endpoints are restricted to administrators.
+
+### Authentication Flow
+
+``` text
+Username + Password
+        |
+        v
+FastAPI /auth/login
+        |
+        v
+Find user in MongoDB
+        |
+        v
+Verify Argon2 password hash
+        |
+        v
+Check account status
+        |
+        v
+Generate JWT
+        |
+        v
+React stores access token
+        |
+        v
+Protected API requests
+```
 
 ## CRUD API
 
@@ -350,6 +496,21 @@ when request data fails validation.
 
 The React application converts API errors into user-friendly toast
 messages.
+
+Authentication and authorization responses include:
+
+``` text
+401 Unauthorized
+```
+
+when login credentials are invalid or a JWT cannot be validated.
+
+``` text
+403 Forbidden
+```
+
+when a valid user does not have permission to perform the requested
+action or when the user account is inactive.
 
 ## Running the Backend Locally
 
@@ -603,7 +764,24 @@ Added:
 -   Employment-status workflow
 -   Responsive mobile styling
 
-### Phase 10 --- Deployment
+### Phase 10 --- Authentication and authorization
+
+Implemented secure application authentication and role-based
+authorization.
+
+-   Added username/password login
+-   Added JWT access tokens
+-   Added Argon2 password hashing
+-   Added authenticated `/auth/me` endpoint
+-   Added four application roles
+-   Added backend RBAC dependencies
+-   Added role-specific frontend views
+-   Added Admin User Management
+-   Added Manager My Team access
+-   Added Employee My Profile access
+-   Added user account activation/deactivation
+
+### Phase 11 --- Deployment
 
 -   Deployed React frontend to Netlify
 -   Deployed FastAPI backend to Render
@@ -676,12 +854,28 @@ https://github.com/MethunKumarv/Employment-Management-System
 ## Security Practices
 
 -   MongoDB credentials are stored in environment variables.
+
 -   `.env` files are excluded from Git.
+
 -   The MongoDB connection string is not included in frontend code.
+
 -   MongoDB Atlas network access is restricted rather than allowing
     unrestricted access.
+
 -   Unique database indexes protect employee IDs and email addresses.
+
 -   Backend validation prevents invalid employee data from being stored.
+
+-   Passwords are hashed using Argon2 before database storage.
+
+-   Plaintext passwords are never stored in MongoDB.
+
+-   JWT authentication protects authenticated API requests.
+
+-   Backend role checks enforce authorization independently of the
+    frontend.
+
+-   Inactive user accounts are prevented from logging in.
 
 ## Design Decisions
 
@@ -716,6 +910,23 @@ The separation provides a clear full-stack architecture:
 React → FastAPI → MongoDB
 ```
 
+### Why JWT authentication?
+
+JWT provides a stateless mechanism for the frontend to prove that a user
+has authenticated when calling protected FastAPI endpoints.
+
+### Why role-based access control?
+
+Different users require different levels of access. RBAC associates
+permissions with roles and allows the backend to enforce those
+permissions consistently.
+
+### Why Argon2 password hashing?
+
+Passwords should not be stored in plaintext. Argon2 transforms passwords
+into secure hashes that can be verified during login without storing the
+original password.
+
 ### Why soft delete?
 
 Employee records may need to remain available for administrative or
@@ -724,25 +935,24 @@ to `Inactive` instead of permanently deleting the document.
 
 ## Current Production Links
 
-  --------------------------------------------------------------------------------------------------
-  Resource                            URL
-  ----------------------------------- --------------------------------------------------------------
-  Frontend                            https://hexaemsplatform.netlify.app/
+  ----------------------------------------------------------------------------------------
+  Resource                  URL
+  ------------------------- --------------------------------------------------------------
+  Frontend                  https://hexaemsplatform.netlify.app/
 
-  Backend API                         https://hexaems-api.onrender.com
+  Backend API               https://hexaems-api.onrender.com
 
-  Swagger API Docs                    https://hexaems-api.onrender.com/docs
+  Swagger API Docs          https://hexaems-api.onrender.com/docs
 
-  GitHub Repository                   https://github.com/MethunKumarv/Employment-Management-System
-  --------------------------------------------------------------------------------------------------
+  GitHub Repository         https://github.com/MethunKumarv/Employment-Management-System
+  ----------------------------------------------------------------------------------------
 
 ## Future Improvements
 
 Possible future enhancements:
 
--   Authentication and role-based access
--   Admin/HR accounts
--   Employee profile pages
+-   Password reset functionality
+-   Employee profile editing
 -   Joining-date management
 -   Leave management
 -   Attendance management
@@ -782,6 +992,32 @@ This project demonstrates practical experience with:
 -   Render
 -   Basic application security
 -   Soft-delete business logic
+
+## Current System Capabilities
+
+The current version of HexaEMS includes:
+
+-   Full employee CRUD and lifecycle management
+-   Automatic permanent Employee ID generation
+-   Search, filtering, sorting, and pagination
+-   Dashboard statistics
+-   Username/password authentication
+-   JWT-based authentication
+-   Argon2 password hashing
+-   Role-Based Access Control
+-   Admin, HR Manager, Manager, and Employee roles
+-   Admin User Management
+-   Manager My Team
+-   Employee My Profile
+-   User account activation/deactivation
+-   Role-specific frontend access
+-   Backend authorization
+-   Password visibility toggle
+-   Responsive UI
+-   Toast notifications
+-   MongoDB Atlas persistence
+-   Netlify frontend deployment
+-   Render backend deployment
 
 ## Conclusion
 

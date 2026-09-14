@@ -99,6 +99,7 @@ function Login({ onLogin }) {
                 onChange={(event) =>
                     setPassword(event.target.value)
                 }
+                placeholder="Enter your password"
                 required
                 />
 
