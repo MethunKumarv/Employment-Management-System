@@ -1935,3 +1935,112 @@ button {
   border-color: #f0b8b2;
   color: #b42318;
 }
+
+.user-management-card {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1.2fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border: 1px solid #e5e9f0;
+  border-radius: 11px;
+  background: #ffffff;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.user-management-card:hover {
+  border-color: #d3d9e3;
+  box-shadow: 0 5px 15px rgba(23, 32, 51, 0.045);
+}
+
+.user-management-username {
+  font-weight: 700;
+  color: #20293a;
+}
+
+.user-management-role,
+.user-management-employee-id {
+  color: #70798a;
+  font-size: 12px;
+}
+
+.user-management-status {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #f0f2f5;
+  color: #5f6878;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.user-management-status-active {
+  background: #e9f6ef;
+  color: #168653;
+}
+
+.user-management-status-inactive {
+  background: #f1f3f5;
+  color: #70798a;
+}
+
+.user-management-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-management-action {
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  padding: 7px 12px;
+  background: #ffffff;
+  color: #4e5869;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.user-management-action:hover:not(:disabled) {
+  background: #f5f7fb;
+  border-color: #c7ced9;
+}
+
+.user-management-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.user-management-delete {
+  color: #b42318;
+}
+
+.user-management-delete:hover:not(:disabled) {
+  background: #fff1f0;
+  border-color: #f0b8b2;
+  color: #b42318;
+}
+
+@media (max-width: 800px) {
+  .user-management-card {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 520px) {
+  .user-management-card {
+    grid-template-columns: 1fr;
+  }
+
+  .user-management-actions {
+    width: 100%;
+  }
+}
