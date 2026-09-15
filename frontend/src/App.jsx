@@ -1880,6 +1880,7 @@ if (!user) {
         onChange={(event) =>
           setNewUsername(event.target.value)
         }
+        placeholder="Enter username"
         required
       />
     </div>
@@ -1892,6 +1893,7 @@ if (!user) {
         onChange={(event) =>
           setNewPassword(event.target.value)
         }
+        placeholder="Enter password"
         required
       />
     </div>
