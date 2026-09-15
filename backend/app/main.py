@@ -234,6 +234,45 @@ def toggle_user_status(
         "status": new_status,
     }
 
+@app.delete("/users/{user_id}/permanent")
+def permanently_delete_user(
+    user_id: str,
+    current_user=Depends(require_admin),
+):
+    try:
+        object_id = ObjectId(user_id)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid user ID",
+        )
+
+    user = users_collection.find_one(
+        {"_id": object_id}
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    # Prevent Admin from deleting their own account.
+    if user["username"] == current_user["username"]:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot delete your own account",
+        )
+
+    users_collection.delete_one(
+        {"_id": object_id}
+    )
+
+    return {
+        "message": "User deleted permanently",
+        "username": user["username"],
+    }
+
 def generate_employee_id():
     counter = counters_collection.find_one_and_update(
         {"_id": "employee_id"},

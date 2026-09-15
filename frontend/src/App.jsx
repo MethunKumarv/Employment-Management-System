@@ -268,6 +268,42 @@ const toggleUserStatus = async (userId) => {
   }
 };
 
+const deleteUser = async (userId) => {
+  const token = localStorage.getItem(
+    "hexaems_access_token"
+  );
+
+  if (!token) {
+    return;
+  }
+
+  const confirmed = window.confirm(
+    "Are you sure you want to permanently delete this user?"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await axios.delete(
+      `${API_URL}/users/${userId}/permanent`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    await fetchUsers();
+  } catch (error) {
+    console.error(
+      "Error deleting user:",
+      error
+    );
+  }
+};
+
 const createUser = async (event) => {
   event.preventDefault();
 
@@ -1932,49 +1968,35 @@ if (!user) {
               Employee ID: {systemUser.employee_id || "—"}
             </div>
 
-            <button
-              className="user-management-action"
-              type="button"
-              onClick={() => toggleUserStatus(systemUser._id)}
-              disabled={systemUser.username === user.username}
-            >
-              {systemUser.status === "Active"
-                ? "Deactivate"
-                : "Activate"}
-            </button>
+            <div className="user-management-actions">
+              <button
+                className="user-management-action"
+                type="button"
+                onClick={() =>
+                  toggleUserStatus(systemUser._id)
+                }
+                disabled={
+                  systemUser.username === user.username
+                }
+              >
+                {systemUser.status === "Active"
+                  ? "Deactivate"
+                  : "Activate"}
+              </button>
 
-            <div>
-              <strong>
-                {systemUser.username}
-              </strong>
+              <button
+                className="user-management-action user-management-delete"
+                type="button"
+                onClick={() =>
+                  deleteUser(systemUser._id)
+                }
+                disabled={
+                  systemUser.username === user.username
+                }
+              >
+                Delete
+              </button>
             </div>
-
-            <div>
-              Role: {systemUser.role}
-            </div>
-
-            <div>
-              Status: {systemUser.status}
-            </div>
-
-            <div>
-              Employee ID:{" "}
-              {systemUser.employee_id || "—"}
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                toggleUserStatus(systemUser._id)
-              }
-              disabled={
-                systemUser.username === user.username
-              }
-            >
-              {systemUser.status === "Active"
-                ? "Deactivate"
-                : "Activate"}
-            </button>
 
           </div>
         ))

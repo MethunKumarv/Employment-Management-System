@@ -1919,3 +1919,19 @@ button {
   outline: 2px solid #7d8797;
   outline-offset: 2px;
 }
+
+.user-management-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-management-delete {
+  color: #b42318;
+}
+
+.user-management-delete:hover:not(:disabled) {
+  background: #fff1f0;
+  border-color: #f0b8b2;
+  color: #b42318;
+}
